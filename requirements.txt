@@ -1,0 +1,23 @@
+# Restaurant POS — Python Requirements
+# Generated from actual imports across main.py, screens/, database/, receipt.py, printer.py
+#
+# Build target: Android (Buildozer)
+# For APK builds use buildozer.spec (pinned versions + custom p4a recipes).
+# This file covers desktop dev/testing installs.
+
+# ── Core UI framework ─────────────────────────────────────────────────────────
+kivy==2.3.1
+
+# ── PDF receipt generation ────────────────────────────────────────────────────
+reportlab==4.2.5
+
+# ── File picker (logo selection, Android gallery) ─────────────────────────────
+plyer==2.1.0
+
+# ── Image handling (required by Kivy + reportlab logo embedding) ──────────────
+Pillow==10.4.0
+
+# ── Android-only (auto-provided by p4a on device, not needed for desktop dev) ─
+# pyjnius   — used for Bluetooth (jnius.autoclass) and Android file APIs
+# android   — used for permission requests (android.permissions)
+# Both are satisfied by python-for-android at build time; do NOT pip-install them.

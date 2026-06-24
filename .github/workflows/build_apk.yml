@@ -1,0 +1,156 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Python ──────────────────────────────────────────────────────────
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # ── 2.5 Java ───────────────────────────────────────────────────────────
+      - name: Setup Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # ── 3. System dependencies ─────────────────────────────────────────────
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            build-essential \
+            git \
+            zip unzip \
+            autoconf libtool cmake \
+            libssl-dev libffi-dev python3-dev \
+            libltdl-dev \
+            libncurses5-dev libncursesw5-dev \
+            ccache \
+            lld
+
+      # ── 4. Python build tools ──────────────────────────────────────────────
+      - name: Install Python build tools
+        run: |
+          pip install --upgrade pip setuptools wheel
+          pip install buildozer cython==0.29.36 virtualenv
+
+      # ── 5. Android SDK licenses & components ──────────────────────────────
+      - name: Accept Android SDK licenses & install required components
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "ndk;25.2.9519653"
+
+      # ── 6. Cache Buildozer downloads ───────────────────────────────────────
+      - name: Cache Buildozer global directory
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            buildozer-${{ runner.os }}-
+
+      # ── 7. Build APK ───────────────────────────────────────────────────────
+      - name: Build APK with Buildozer
+        run: |
+          export PATH="$ANDROID_HOME/build-tools/34.0.0:$ANDROID_HOME/platform-tools:$PATH"
+          yes | buildozer -v android debug 2>&1 | tee buildozer_build.log
+          BUILD_EXIT=${PIPESTATUS[1]}
+          if [ $BUILD_EXIT -ne 0 ]; then
+            echo "::error::Buildozer failed with exit code $BUILD_EXIT"
+            tail -100 buildozer_build.log
+            exit $BUILD_EXIT
+          fi
+
+      # ── 8. DEBUG — Find exactly where Buildozer placed the APK ────────────
+      - name: Find APK location (debug)
+        if: always()
+        run: |
+          echo "====== Current working directory ======"
+          pwd
+
+          echo ""
+          echo "====== All APK files found anywhere ======"
+          find . -name "*.apk" -type f 2>/dev/null || echo "No .apk files found"
+
+          echo ""
+          echo "====== Contents of bin/ (if exists) ======"
+          if [ -d "bin" ]; then
+            ls -lh bin/
+          else
+            echo "bin/ directory does NOT exist"
+          fi
+
+          echo ""
+          echo "====== Contents of .buildozer/android/platform/ (if exists) ======"
+          if [ -d ".buildozer/android/platform" ]; then
+            find .buildozer/android/platform -name "*.apk" -type f 2>/dev/null || echo "No APKs in .buildozer"
+          else
+            echo ".buildozer/android/platform does NOT exist"
+          fi
+
+          echo ""
+          echo "====== Top-level directory listing ======"
+          ls -la
+
+      # ── 9. Collect APK from anywhere Buildozer put it ─────────────────────
+      - name: Collect APK into known location
+        if: always()
+        run: |
+          mkdir -p apk_output
+
+          # Search every possible location Buildozer uses
+          APK_FILES=$(find . \
+            -path "./apk_output" -prune -o \
+            -name "*.apk" -type f -print 2>/dev/null)
+
+          if [ -z "$APK_FILES" ]; then
+            echo "WARNING: No APK files found anywhere!"
+          else
+            echo "Found APK files:"
+            echo "$APK_FILES"
+            for f in $APK_FILES; do
+              echo "Copying: $f -> apk_output/"
+              cp "$f" apk_output/
+            done
+            echo ""
+            echo "====== APK output directory ======"
+            ls -lh apk_output/
+          fi
+
+      # ── 10. Upload APK artifact ────────────────────────────────────────────
+      - name: Upload APK artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RestaurantPOS-APK
+          path: apk_output/
+          if-no-files-found: warn
+
+      # ── 11. Upload full build log (always — useful for debugging) ──────────
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: buildozer-build-log
+          path: buildozer_build.log
+          if-no-files-found: ignore

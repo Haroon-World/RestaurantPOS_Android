@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Kivy / Buildozer
+.buildozer/
+bin/
+*.apk
+*.aab
+
+# Runtime logs
+pos_startup.log
+pos_startup_crash.log
+
+# Run logs
+run_logs/
+run_logs2/
+run_logs3/
+run_logs4/
+run_logs*.zip
+
+# Release builds
+release/
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Receipts
+receipts/
+
+# Android build cache
+.gradle/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
