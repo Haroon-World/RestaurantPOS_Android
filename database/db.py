@@ -145,7 +145,7 @@ def initialize_database():
                 """INSERT INTO RestaurantSettings 
                    (restaurant_name, address, phone, logo_path, default_delivery_charge, default_service_charge, history_retention_days, admin_pin, custom_receipt_message, printer_mac) 
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                ("Restaurant Name", "Your Address Here", "03001234567", "", 0.0, 0.0, 1, "2580", "", "")
+                ("Restaurant Name", "Your Address Here", "+1 555-0100", "", 0.0, 0.0, 1, "2580", "", "")
             )
 
         conn.commit()

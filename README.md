@@ -1,126 +1,146 @@
-# Restaurant POS — Android
+# Restaurant POS — Android & Mobile
 
-A full-featured Point of Sale system for restaurants, built with Python and Kivy for Android.
-Generates PDF receipts, prints to Bluetooth thermal printers, and stores all data locally in SQLite.
+[![Python](https://img.shields.io/badge/Python-3.11-blue.svg?logo=python)](https://www.python.org/)
+[![Framework-Kivy](https://img.shields.io/badge/Framework-Kivy%202.3-green.svg)](https://kivy.org/)
+[![Platform-Android](https://img.shields.io/badge/Platform-Android%2010%2B-3DDC84.svg?logo=android)](https://www.android.com/)
+[![Printer-ESC%2FPOS](https://img.shields.io/badge/Printer-Bluetooth%20ESC%2FPOS-blueviolet.svg)](printer.py)
+[![Database-SQLite](https://img.shields.io/badge/Database-SQLite%203-lightgrey.svg?logo=sqlite)](https://www.sqlite.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
----
-
-## Features
-
-- **Billing System** — Fast order entry with a searchable menu grid, quantity controls, and automatic totals
-- **Menu Management** — Add, edit, and delete menu items with live search
-- **Sales History** — View and reprint today's bills; records auto-pruned by configurable retention period
-- **Restaurant Settings** — Configure name, address, phone, delivery/service charges, and receipt footer
-- **Logo Upload** — Attach your restaurant logo to PDF receipts via the device gallery
-- **PDF Receipt Generation** — 80 mm thermal-printer-formatted PDFs saved to `Documents/RestaurantPOS/Receipts/`
-- **Bluetooth Thermal Printer Support** — ESC/POS printing to any paired Bluetooth printer
-- **Android Storage Integration** — Uses Android scoped storage APIs; requests only required permissions
+A mobile Point of Sale (POS) application engineered in **Python** using **Kivy** and packaged for **Android** via **python-for-android / Buildozer**. Features offline SQLite transaction handling, 80mm/58mm thermal receipt PDF rendering, and direct Android Bluetooth ESC/POS printing over RFCOMM sockets via PyJNIus.
 
 ---
 
-## Requirements
+## Key Capabilities
 
-| Package     | Version  | Purpose                              |
-|-------------|----------|--------------------------------------|
-| kivy        | 2.3.1    | UI framework                         |
-| reportlab   | 4.2.5    | PDF receipt generation               |
-| plyer       | 2.1.0    | Native file picker (logo selection)  |
-| Pillow      | 10.4.0   | Image handling for logo embedding    |
-| pyjnius     | (p4a)    | Android Java bridge (Bluetooth, APIs)|
-
-> **Note:** `pyjnius` and the `android` module are provided automatically by
-> [python-for-android](https://python-for-android.readthedocs.io/) during APK builds.
-> They are not required for desktop development.
+- **Mobile Counter & Tabletop Billing**: Swift cart selection, customizable modifier lines, automatic delivery/service surcharges, and instant total calculations.
+- **Wireless Bluetooth ESC/POS Printing**: Native Android Bluetooth RFCOMM socket interface that connects directly to portable 58mm/80mm thermal printers (e.g., Goojprt, Milestone, Xprinter, Zebra) with zero cloud drivers.
+- **Embedded Document Engine**: Programmatic ReportLab compiler generating thermal PDF receipts directly into Android Scoped Storage (`Documents/RestaurantPOS/Receipts/`).
+- **Dynamic Catalog CRUD**: Add, edit, price, and catalog menu items on the fly with real-time substring filtering.
+- **Automated Operations Lifecycle**: Daily transaction archiving with configurable data retention rules to optimize SQLite performance on mobile flash storage.
+- **Automated GitHub Actions CI/CD**: Fully automated Buildozer container pipeline compiling production `.apk` artifacts directly from source on every release tag.
 
 ---
 
-## Installation
+## Visual Showcase
 
-```bash
-# 1. Clone the repository
-git clone https://github.com/your-username/RestaurantPOS_Android.git
-cd RestaurantPOS_Android
+| Mobile Sales & Billing Screen | Mobile Menu Catalog |
+| :---: | :---: |
+| ![Android Billing Screen](docs/screenshots/pos_android_billing.png) | ![Android Menu Screen](docs/screenshots/pos_android_menu.png) |
+| *Real-Time Cart, Taxes & Bluetooth Print* | *Mobile Item Intake & Live Pricing* |
 
-# 2. Install Python dependencies (desktop dev/testing)
-pip install -r requirements.txt
+---
 
-# 3. Run on desktop
-python main.py
+## Architecture & Hardware Pipeline
+
+```mermaid
+graph TD
+    User[Touch Interface / Kivy GUI] --> Controller[Application Coordinator]
+    Controller --> LocalDB[(Private App SQLite Storage)]
+    Controller --> PDFGen[ReportLab PDF Engine]
+    Controller --> BTService[PyJNIus Bluetooth Adapter]
+    
+    PDFGen --> ScopedStorage[Android Scoped Storage / Documents]
+    BTService --> RFCOMM[Android Bluetooth RFCOMM Socket]
+    RFCOMM --> Printer[Wireless 58mm/80mm Thermal Printer]
 ```
 
 ---
 
-## Build APK with Buildozer
+## Technical Specifications
 
-> Buildozer requires a **Linux** environment (Ubuntu 20.04+ recommended) or WSL2 on Windows.
+| Component | Technology | Role |
+| :--- | :--- | :--- |
+| **Language** | Python 3.11 | Core business logic and database queries |
+| **GUI Framework** | Kivy 2.3.1 | Cross-platform mobile touch widgets and canvas rendering |
+| **Hardware Bridge** | PyJNIus (`p4a`) | Android Java Native Interface for Bluetooth Device discovery and socket I/O |
+| **Receipt Rendering**| ReportLab 4.2+ | Formatted 80mm thermal receipts with store logos |
+| **File Picker** | Plyer 2.1.0 | Native Android SAF gallery picker for store logo selection |
+| **Packaging** | Buildozer / P4A | Automated Android Gradle toolchain compiling release APKs |
+
+---
+
+## Quickstart & Setup
+
+### Desktop Testing & Development
+
+Run the mobile layout locally on desktop before deploying to devices:
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Haroon-World/RestaurantPOS_Android.git
+   cd RestaurantPOS_Android
+   ```
+
+2. **Create and activate a virtual environment:**
+   ```bash
+   python -m venv .venv
+   .\.venv\Scripts\activate
+   ```
+
+3. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Run the Kivy application:**
+   ```bash
+   python main.py
+   ```
+
+---
+
+## Android APK Compilation
+
+The repository includes a configured `buildozer.spec` and automated GitHub Actions workflow (`.github/workflows/build-apk.yml`).
+
+To build locally using Buildozer (requires Linux or WSL2):
 
 ```bash
 # Install Buildozer
 pip install buildozer
 
-# Build a debug APK
+# Build debug APK
 buildozer android debug
-
-# The APK is output to:
-#   bin/restaurantpos-1.1-arm64-v8a-debug.apk
 ```
 
-Install on a connected Android device:
-
-```bash
-buildozer android deploy run
-```
+Compiled APK artifacts will be placed in the `bin/` directory.
 
 ---
 
 ## Project Structure
 
 ```
-RestaurantPOS_Android_GitHub/
-├── main.py               # App entry point; 3-stage startup model
-├── receipt.py            # PDF receipt generation (reportlab)
-├── printer.py            # Bluetooth ESC/POS printing
-├── buildozer.spec        # Buildozer build configuration
-├── requirements.txt      # Python package dependencies
-├── build_apk.sh          # Helper script for WSL2 / Linux builds
-│
+RestaurantPOS_Android/
+├── .github/workflows/      # Automated Buildozer CI/CD pipeline
+├── database/
+│   └── db.py               # SQLite schema bootstrap, CRUD and maintenance
+├── docs/
+│   └── screenshots/        # Mobile UI walkthrough screenshots
 ├── screens/
-│   ├── billing.py        # Billing screen — order entry & payment
-│   ├── menu.py           # Menu management screen
-│   ├── history.py        # Sales history screen
-│   └── settings.py       # Restaurant settings screen
-│
-└── database/
-    └── db.py             # SQLite helpers (schema, CRUD, cleanup)
+│   ├── billing.py          # Mobile cart, order calculation, settlement
+│   ├── menu.py             # Mobile item creation and catalog
+│   ├── history.py          # Sales logs and re-print dialogs
+│   └── settings.py         # Store settings, tax, and Bluetooth printer pairing
+├── buildozer.spec          # Android package specification and permissions
+├── printer.py              # PyJNIus Bluetooth ESC/POS raw socket driver
+├── receipt.py              # ReportLab PDF receipt generator
+├── main.py                 # Kivy application lifecycle and screen manager
+├── LICENSE                 # MIT License
+└── README.md               # Project documentation
 ```
-
----
-
-## Android Permissions Used
-
-| Permission                  | Reason                                      |
-|-----------------------------|---------------------------------------------|
-| `WRITE_EXTERNAL_STORAGE`    | Save PDF receipts to Documents folder       |
-| `READ_EXTERNAL_STORAGE`     | Read logo image from device storage         |
-| `READ_MEDIA_IMAGES`         | Android 13+ image access for logo upload    |
-| `BLUETOOTH` / `BLUETOOTH_CONNECT` / `BLUETOOTH_SCAN` | Thermal printer communication |
-
----
-
-## Database
-
-All data is stored locally in **SQLite** (`restaurant.db`) under the app's private storage directory.
-No internet connection or external server is required.
-
-Tables:
-- `RestaurantSettings` — Single-row restaurant configuration
-- `Menu` — Menu items with name and price
-- `Customers` — Customer details per bill
-- `Bills` — Bill header (date, time, totals, charges)
-- `BillItems` — Line items per bill
 
 ---
 
 ## License
 
-This project is released for personal and commercial use. No activation or licensing system is included.
+This software is released under the [MIT License](LICENSE).
+
+---
+
+## Author & Contact
+
+**Muhammad Haroon Siddique**  
+AI & Software Engineer | Top Position, Arfa Karim Fellowship Program 2026  
+- **LinkedIn**: [linkedin.com/in/muhammad-haroon-engr](https://www.linkedin.com/in/muhammad-haroon-engr)  
+- **GitHub**: [@Haroon-World](https://github.com/Haroon-World)
